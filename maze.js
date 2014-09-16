@@ -4,8 +4,8 @@
 var gl;
 var points;
 
-var rows = 4;
-var cols = 4;
+var rows = 5;
+var cols = 5;
 for(var cells = [];cells.length < rows; cells.push([]));
 var points = [];
 
@@ -31,7 +31,7 @@ window.onload = function init()
 
     // construct the maze
     addOuterWalls();
-    // addWalls(0, rows, 0, cols);
+    addWalls(0, rows, 0, cols, 0);
 
     // find the points for the lines for the maze
     getPointsFromCells();
@@ -73,19 +73,22 @@ function addOuterWalls(){
     }
 }
 
-function addWalls(rowStart, rowEnd, colStart, colEnd){
+function addWalls(rowStart, rowEnd, colStart, colEnd, count){
     var numRows = rowEnd - rowStart;
     var numCols = colEnd - colStart;
-    if ((numRows == 1  || numRows == 0) && (numCols == 1 || numCols == 0)){
+    count+=1;
+    if (count == 4){
         return;
     } else if ( numRows >= numCols){
         var divRow = Math.floor(numRows/2);
         createVerticalWall(divRow, colStart, colEnd);
-        // addWalls(divRow, rowEnd, colStart, colEnd);
+        addWalls(divRow, rowEnd, colStart, colEnd, count);
+        addWalls(rowStart, divRow, colStart, colEnd, count);
     } else {
         var divCol = Math.floor(numCols/2);
-        createHorizontalWall(divCol, 0, rows);
-        // addWalls(rowStart, rowEnd, divCol, colEnd);
+        createHorizontalWall(divCol, rowStart, rowEnd);
+        addWalls(rowStart, rowEnd, divCol, colEnd, count);
+        addWalls(rowStart, rowEnd, colStart, divCol, count);
     }
 }
 
@@ -93,7 +96,7 @@ function createVerticalWall(row, start, end){
     for(var i = start; i < end; i++){
         cells[row][i].leftLine = true;
     }
-    var chosen = randomBetween(0, end -1);
+    var chosen = randomBetween(start, end - 1);
     cells[row][chosen].leftLine = false;
 }
 
@@ -101,7 +104,7 @@ function createHorizontalWall(col, start, end){
     for(var i = start; i < end; i++){
         cells[i][col].bottomLine = true;
     }
-    var chosen = randomBetween(0, end -1);
+    var chosen = randomBetween(start, end - 1);
     cells[chosen][col].bottomLine = false;
 }
 
