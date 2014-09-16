@@ -1,7 +1,8 @@
+// Jacob Oakes
+// used recursive algorithm to generate maze found here: http://weblog.jamisbuck.org/2011/1/12/maze-generation-recursive-division-algorithm
 
 var gl;
 var points;
-var Nrand, GaussAdd, GaussFac;
 
 var rows = 4;
 var cols = 4;
@@ -15,12 +16,11 @@ window.onload = function init()
     gl = WebGLUtils.setupWebGL( canvas );
     if ( !gl ) { alert( "WebGL isn't available" ); }
 
-    // Compute the vertices for the line as the sum of Gaussian random variables.
-    
+    // Compute the vertices for each cell in the maze 
+    var ratioCols = 2/(cols + 1);
+    var ratioRows = 2/(rows + 1);   
     for(var i = 0; i < rows; i++){
         for(var j = 0; j < cols; j++){
-            var ratioCols = 2/cols;
-            var ratioRows = 2/rows;
             var bottomLeft = vec2(ratioCols * i - 1, ratioRows * j -1);
             var topLeft = vec2(ratioCols * i - 1, ratioRows * (j+1) - 1);
             var topRight = vec2(ratioCols * (i+1)-1, ratioRows * (j+1) - 1);
@@ -29,29 +29,26 @@ window.onload = function init()
         } 
     }
 
+    // construct the maze
     addOuterWalls();
-    addWalls();
-    getPointsFromCells();
+    // addWalls(0, rows, 0, cols);
 
-    //
+    // find the points for the lines for the maze
+    getPointsFromCells();
+    
     //  Configure WebGL
-    //
     gl.viewport( 0, 0, canvas.width, canvas.height );
     gl.clearColor( 1.0, 1.0, 1.0, 1.0 );
     
     //  Load shaders and initialize attribute buffers
-    
     var program = initShaders( gl, "vertex-shader", "fragment-shader" );
     gl.useProgram( program );
 
     var bufferId = gl.createBuffer();
     gl.bindBuffer( gl.ARRAY_BUFFER, bufferId );
-    gl.bufferData( gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW );
-    
-   
+    gl.bufferData( gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW );   
 
     // Associate out shader variables with our data buffer
-    
     var vPosition = gl.getAttribLocation( program, "vPosition" );
     gl.vertexAttribPointer( vPosition, 2, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vPosition );
@@ -76,9 +73,20 @@ function addOuterWalls(){
     }
 }
 
-function addWalls(){
-    createVerticalWall(Math.floor(rows/2), 0, cols)
-    // createHorizontalWall(Math.floor(cols/2), 0, rows);
+function addWalls(rowStart, rowEnd, colStart, colEnd){
+    var numRows = rowEnd - rowStart;
+    var numCols = colEnd - colStart;
+    if ((numRows == 1  || numRows == 0) && (numCols == 1 || numCols == 0)){
+        return;
+    } else if ( numRows >= numCols){
+        var divRow = Math.floor(numRows/2);
+        createVerticalWall(divRow, colStart, colEnd);
+        // addWalls(divRow, rowEnd, colStart, colEnd);
+    } else {
+        var divCol = Math.floor(numCols/2);
+        createHorizontalWall(divCol, 0, rows);
+        // addWalls(rowStart, rowEnd, divCol, colEnd);
+    }
 }
 
 function createVerticalWall(row, start, end){
