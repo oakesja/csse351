@@ -4,8 +4,8 @@
 var gl;
 var points;
 
-var rows = 4;
-var cols = 5;
+var rows = 20;
+var cols = 20;
 for(var cells = [];cells.length < rows; cells.push([]));
 var points = [];
 
@@ -70,6 +70,18 @@ function addOuterWalls(){
     for(i = 0; i < cols; i++){
         cells[0][i].leftLine = true;
         cells[rows-1][i].rightLine = true;
+    }
+    createOuterOpenings()
+}
+
+function createOuterOpenings(){
+    var orientation = randomBetween(0, 1);
+    if(orientation == 0){
+        cells[0][randomBetween(0, cols - 1)].leftLine = false;
+        cells[rows - 1][randomBetween(0, cols - 1)].rightLine = false;
+    } else {
+        cells[randomBetween(0, rows - 1)][0].bottomLine = false;
+        cells[randomBetween(0, rows - 1)][cols -1].topLine = false;
     }
 }
 
