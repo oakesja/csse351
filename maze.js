@@ -3,9 +3,9 @@ var gl;
 var points;
 var Nrand, GaussAdd, GaussFac;
 
-var n = 4;
-var m = 4;
-for(var cells = [];cells.length < n; cells.push([]));
+var rows = 4;
+var cols = 4;
+for(var cells = [];cells.length < rows; cells.push([]));
 var points = [];
 
 window.onload = function init()
@@ -17,20 +17,20 @@ window.onload = function init()
 
     // Compute the vertices for the line as the sum of Gaussian random variables.
     
-    for(var i = 0; i < m; i++){
-        for(var j = 0; j < n; j++){
-            var ratioM = 2/m;
-            var ratioN = 2/n;
-            var bottomLeft = vec2(ratioM * i - 1, ratioN * j -1);
-            var topLeft = vec2(ratioM * i - 1, ratioN * (j+1) - 1);
-            var topRight = vec2(ratioM * (i+1)-1, ratioN * (j+1) - 1);
-            var bottomRight = vec2(ratioM* (i+1) - 1, ratioN * j - 1);
+    for(var i = 0; i < rows; i++){
+        for(var j = 0; j < cols; j++){
+            var ratioCols = 2/cols;
+            var ratioRows = 2/rows;
+            var bottomLeft = vec2(ratioCols * i - 1, ratioRows * j -1);
+            var topLeft = vec2(ratioCols * i - 1, ratioRows * (j+1) - 1);
+            var topRight = vec2(ratioCols * (i+1)-1, ratioRows * (j+1) - 1);
+            var bottomRight = vec2(ratioCols* (i+1) - 1, ratioRows * j - 1);
             cells[i][j] = new Cell(bottomLeft, topLeft, topRight, bottomRight);
         } 
     }
 
     addOuterWalls();
-    completeMaze();
+    addWalls();
     getPointsFromCells();
 
     //
@@ -66,25 +66,40 @@ function render() {
 }
 
 function addOuterWalls(){
-    for(var i = 0; i < n; i++){
+    for(var i = 0; i < rows; i++){
         cells[i][0].bottomLine = true;
-        cells[i][m-1].topLine = true;
+        cells[i][cols-1].topLine = true;
     }
-    for(i = 0; i < m; i++){
+    for(i = 0; i < cols; i++){
         cells[0][i].leftLine = true;
-        cells[n-1][i].rightLine = true;
+        cells[rows-1][i].rightLine = true;
     }
 }
 
-function completeMaze(){
-    for(var i = 0; i < m; i++){
-        cells[1][i].rightLine = true;
+function addWalls(){
+    createVerticalWall(Math.floor(rows/2), 0, cols)
+    // createHorizontalWall(Math.floor(cols/2), 0, rows);
+}
+
+function createVerticalWall(row, start, end){
+    for(var i = start; i < end; i++){
+        cells[row][i].leftLine = true;
     }
+    var chosen = randomBetween(0, end -1);
+    cells[row][chosen].leftLine = false;
+}
+
+function createHorizontalWall(col, start, end){
+    for(var i = start; i < end; i++){
+        cells[i][col].bottomLine = true;
+    }
+    var chosen = randomBetween(0, end -1);
+    cells[chosen][col].bottomLine = false;
 }
 
 function getPointsFromCells(){
-    for(var i = 0; i < m; i++){
-        for(var j = 0; j < n; j++){
+    for(var i = 0; i < rows; i++){
+        for(var j = 0; j < cols; j++){
             var cell = cells[i][j];
             if(cell.leftLine){
                 points.push(cell.bottomLeft, cell.topLeft);
@@ -100,6 +115,10 @@ function getPointsFromCells(){
             }
         } 
     }
+}
+
+function randomBetween(min, max){
+    return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
 function Cell(bottomLeft, topLeft, topRight, bottomRight){
