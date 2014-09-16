@@ -4,7 +4,7 @@
 var gl;
 var points;
 
-var rows = 5;
+var rows = 4;
 var cols = 5;
 for(var cells = [];cells.length < rows; cells.push([]));
 var points = [];
@@ -77,15 +77,15 @@ function addWalls(rowStart, rowEnd, colStart, colEnd, count){
     var numRows = rowEnd - rowStart;
     var numCols = colEnd - colStart;
     count+=1;
-    if (count == 4){
+    if (numRows <= 1 && numCols <= 1){
         return;
     } else if ( numRows >= numCols){
-        var divRow = Math.floor(numRows/2);
+        var divRow = Math.floor(numRows/2) + rowStart;
         createVerticalWall(divRow, colStart, colEnd);
         addWalls(divRow, rowEnd, colStart, colEnd, count);
         addWalls(rowStart, divRow, colStart, colEnd, count);
     } else {
-        var divCol = Math.floor(numCols/2);
+        var divCol = Math.floor(numCols/2) + colStart;
         createHorizontalWall(divCol, rowStart, rowEnd);
         addWalls(rowStart, rowEnd, divCol, colEnd, count);
         addWalls(rowStart, rowEnd, colStart, divCol, count);
