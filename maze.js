@@ -4,7 +4,7 @@
 var gl;
 var points;
 
-var rows = 20;
+var rows = 18;
 var cols = 20;
 for(var cells = [];cells.length < rows; cells.push([]));
 var points = [];
@@ -17,14 +17,14 @@ window.onload = function init()
     if ( !gl ) { alert( "WebGL isn't available" ); }
 
     // Compute the vertices for each cell in the maze 
-    var ratioCols = 2/(cols + 1);
-    var ratioRows = 2/(rows + 1);   
+    var colSize = 2/(cols + 1);
+    var rowSize = 2/(rows + 1);   
     for(var i = 0; i < rows; i++){
         for(var j = 0; j < cols; j++){
-            var bottomLeft = vec2(ratioCols * i - 1, ratioRows * j -1);
-            var topLeft = vec2(ratioCols * i - 1, ratioRows * (j+1) - 1);
-            var topRight = vec2(ratioCols * (i+1)-1, ratioRows * (j+1) - 1);
-            var bottomRight = vec2(ratioCols* (i+1) - 1, ratioRows * j - 1);
+            var bottomLeft = vec2(rowSize * j - 1, colSize * i - 1);
+            var topLeft = vec2(rowSize * j - 1, colSize * (i+1) - 1);
+            var topRight = vec2(rowSize * (j+1) - 1, colSize * (i+1)-1);
+            var bottomRight = vec2(rowSize * (j+1) - 1, colSize* i - 1);
             cells[i][j] = new Cell(bottomLeft, topLeft, topRight, bottomRight);
         } 
     }
@@ -63,13 +63,13 @@ function render() {
 }
 
 function addOuterWalls(){
-    for(var i = 0; i < rows; i++){
-        cells[i][0].bottomLine = true;
-        cells[i][cols-1].topLine = true;
+    for(var i = 0; i < cols; i++){
+        cells[0][i].bottomLine = true;
+        cells[rows-1][i].topLine = true;
     }
-    for(i = 0; i < cols; i++){
-        cells[0][i].leftLine = true;
-        cells[rows-1][i].rightLine = true;
+    for(i = 0; i < rows; i++){
+        cells[i][0].leftLine = true;
+        cells[i][cols-1].rightLine = true;
     }
     createOuterOpenings()
 }
@@ -77,11 +77,11 @@ function addOuterWalls(){
 function createOuterOpenings(){
     var orientation = randomBetween(0, 1);
     if(orientation == 0){
-        cells[0][randomBetween(0, cols - 1)].leftLine = false;
-        cells[rows - 1][randomBetween(0, cols - 1)].rightLine = false;
+        cells[randomBetween(0, rows - 1)][0].leftLine = false;
+        cells[randomBetween(0, rows - 1)][cols - 1].rightLine = false;
     } else {
-        cells[randomBetween(0, rows - 1)][0].bottomLine = false;
-        cells[randomBetween(0, rows - 1)][cols -1].topLine = false;
+        cells[0][randomBetween(0, cols - 1)].bottomLine = false;
+        cells[rows-1][randomBetween(0, cols - 1)].topLine = false;
     }
 }
 
@@ -89,35 +89,36 @@ function addWalls(rowStart, rowEnd, colStart, colEnd, count){
     var numRows = rowEnd - rowStart;
     var numCols = colEnd - colStart;
     count+=1;
+    // if (count >=4){
     if (numRows <= 1 && numCols <= 1){
         return;
-    } else if ( numRows >= numCols){
-        var divRow = Math.floor(numRows/2) + rowStart;
-        createVerticalWall(divRow, colStart, colEnd);
-        addWalls(divRow, rowEnd, colStart, colEnd, count);
-        addWalls(rowStart, divRow, colStart, colEnd, count);
-    } else {
+    } else if ( numCols >= numRows){
         var divCol = Math.floor(numCols/2) + colStart;
-        createHorizontalWall(divCol, rowStart, rowEnd);
+        createVerticalWall(divCol, rowStart, rowEnd);
         addWalls(rowStart, rowEnd, divCol, colEnd, count);
         addWalls(rowStart, rowEnd, colStart, divCol, count);
+    } else {
+        var divRow = Math.floor(numRows/2) + rowStart;
+        createHorizontalWall(divRow, colStart, colEnd);
+        addWalls(divRow, rowEnd, colStart, colEnd, count);
+        addWalls(rowStart, divRow, colStart, colEnd, count);
     }
 }
 
-function createVerticalWall(row, start, end){
+function createVerticalWall(div, start, end){
     for(var i = start; i < end; i++){
-        cells[row][i].leftLine = true;
+        cells[i][div].leftLine = true;
     }
     var chosen = randomBetween(start, end - 1);
-    cells[row][chosen].leftLine = false;
+    cells[chosen][div].leftLine = false;
 }
 
-function createHorizontalWall(col, start, end){
+function createHorizontalWall(div, start, end){
     for(var i = start; i < end; i++){
-        cells[i][col].bottomLine = true;
+        cells[div][i].bottomLine = true;
     }
     var chosen = randomBetween(start, end - 1);
-    cells[chosen][col].bottomLine = false;
+    cells[div][chosen].bottomLine = false;
 }
 
 function getPointsFromCells(){
