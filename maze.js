@@ -17,8 +17,8 @@ window.onload = function init()
     if ( !gl ) { alert( "WebGL isn't available" ); }
 
     // Compute the vertices for each cell in the maze 
-    var colSize = 2/(cols + 1);
-    var rowSize = 2/(rows + 1);   
+    var colSize = 2/(cols + 2);
+    var rowSize = 2/(rows + 2);   
     for(var i = 0; i < rows; i++){
         for(var j = 0; j < cols; j++){
             var bottomLeft = vec2(rowSize * j - 1, colSize * i - 1);
