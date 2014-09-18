@@ -21,17 +21,21 @@ window.onload = function init()
     var rowSize = 2/(rows + 2);   
     for(var i = 0; i < rows; i++){
         for(var j = 0; j < cols; j++){
-            var bottomLeft = vec2(rowSize * j - 1, colSize * i - 1);
-            var topLeft = vec2(rowSize * j - 1, colSize * (i+1) - 1);
-            var topRight = vec2(rowSize * (j+1) - 1, colSize * (i+1)-1);
-            var bottomRight = vec2(rowSize * (j+1) - 1, colSize* i - 1);
+            var xLeft = rowSize * j - 1;
+            var xRight = rowSize * (j+1) - 1;
+            var yBottom = colSize * i - 1;
+            var yTop = colSize * (i+1) - 1;
+            var bottomLeft = vec2(xLeft, yBottom);
+            var topLeft = vec2(xLeft, yTop);
+            var topRight = vec2(xRight, yTop);
+            var bottomRight = vec2(xRight, yBottom);
             cells[i][j] = new Cell(bottomLeft, topLeft, topRight, bottomRight);
         } 
     }
 
     // construct the maze
     addOuterWalls();
-    addWalls(0, rows, 0, cols, 0);
+    addWalls(0, rows, 0, cols);
 
     // find the points for the lines for the maze
     getPointsFromCells();
@@ -85,23 +89,21 @@ function createOuterOpenings(){
     }
 }
 
-function addWalls(rowStart, rowEnd, colStart, colEnd, count){
+function addWalls(rowStart, rowEnd, colStart, colEnd){
     var numRows = rowEnd - rowStart;
     var numCols = colEnd - colStart;
-    count+=1;
-    // if (count >=4){
     if (numRows <= 1 && numCols <= 1){
         return;
     } else if ( numCols >= numRows){
         var divCol = Math.floor(numCols/2) + colStart;
         createVerticalWall(divCol, rowStart, rowEnd);
-        addWalls(rowStart, rowEnd, divCol, colEnd, count);
-        addWalls(rowStart, rowEnd, colStart, divCol, count);
+        addWalls(rowStart, rowEnd, divCol, colEnd);
+        addWalls(rowStart, rowEnd, colStart, divCol);
     } else {
         var divRow = Math.floor(numRows/2) + rowStart;
         createHorizontalWall(divRow, colStart, colEnd);
-        addWalls(divRow, rowEnd, colStart, colEnd, count);
-        addWalls(rowStart, divRow, colStart, colEnd, count);
+        addWalls(divRow, rowEnd, colStart, colEnd);
+        addWalls(rowStart, divRow, colStart, colEnd);
     }
 }
 
