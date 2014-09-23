@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" >
+<title>Square</title>
+
+<script id="vertex-shader" type="x-shader/x-vertex">
+attribute vec4 vPosition;
+uniform float theta;
+
+void
+main()
+{
+    gl_Position.x = -sin(theta) * vPosition.x + cos(theta) * vPosition.y;
+	gl_Position.y = sin(theta) * vPosition.y + cos(theta) * vPosition.x;
+	gl_Position.z = 0.0;
+	gl_Position.w = 1.0;
+}
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+precision mediump float;
+uniform vec4 color;
+
+void
+main()
+{
+    gl_FragColor = color;
+}
+</script>
+
+<script type="text/javascript" src="./Common/webgl-utils.js"></script>
+<script type="text/javascript" src="./Common/initShaders.js"></script>
+<script type="text/javascript" src="./Common/MV.js"></script>
+<script type="text/javascript" src="squareMenu.js"></script>
+</head>
+
+<body>
+<select id="colorMenu">
+   <option value="0">Red</option>
+   <option value="1">Green</option>
+   <option value="2">Blue</option>
+   <option value="3">Black</option>
+</select>
+<select id="speedMenu">
+   <option value="0">Slow</option>
+   <option value="1">Medium</option>
+   <option value="2">Fast</option>
+</select>
+<canvas id="gl-canvas" width="500" height="500">
+Oops ... your browser doesn't support the HTML5 canvas element
+</canvas>
+</body>
+</html>
