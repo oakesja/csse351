@@ -12,6 +12,7 @@ var diePointNum = 8;
 var circlePoints = 20;
 var dice = [];
 var holders = [];
+var jails = [];
 var squares = [[],[]];
 var circles = [[],[]];
 var triangles = [[], []];
@@ -21,7 +22,13 @@ var cBuffer;
 var black = vec4( 0.0, 0.0, 0.0, 1.0 );
 var white = vec4( 1.0, 1.0, 1.0, 1.0 );
 var brown = vec4( 0.59765625, 0.296875, 0.0, 1.0 )
-var red = vec4( 1.0, 0.0, 0.0, 1.0 );
+var red = vec4( 0.9, 0.0, 0.0, 1.0 );
+var gold = vec4( 1.0, 215/255, 0.0, 1.0);
+var piece1 = vec4( 244/255, 164/255, 96/255, 1.0);
+var piece2 = black;
+var firstHolderSelected;
+var whiteTurn = true;
+var legalMoves = [];
 
 window.onload = function init()
 {
@@ -56,30 +63,32 @@ window.onload = function init()
     gl.enableVertexAttribArray(vColor);
 
     createHolders();
+	createJails();
     drawBoard();
     createDice();
     drawDice();
-
 
     // click listener
     canvas.addEventListener ("click", function(event) {
         centerX = 2*(event.clientX-canvas.offsetLeft)/canvas.width-1;
         centerY = 2*(canvas.height-event.clientY+canvas.offsetTop)/canvas.height-1;
-        closet = 0;
-        closetDist = 2;
-        for(var i=0; i<holders.length; i++){
-            var x = holders[i].middle[0];
-            var y = holders[i].middle[1];
-            var dist = Math.sqrt(Math.pow(x-centerX,2) + Math.pow(y-centerY,2));
-            if(dist < closetDist){
-                closetDist = dist;
-                closet = i;
+		if(firstHolderSelected==null){
+            if(checkersInJail()){
+                firstHolderSelected = true;
+            } else if(holders[findNearestHolder(centerX, centerY)].checkers.length!=0){
+				firstHolderSelected = findNearestHolder(centerX, centerY);
+			}
+		}
+		else{
+			var secondHolderSelected = findNearestHolder(centerX, centerY);
+            if(checkersInJail()){
+                moveFromJailIfValid(secondHolderSelected);
+            } else {
+                moveIfValid(firstHolderSelected, secondHolderSelected);
             }
-        }
-        holders[closet].checkers.push(1);
-        redraw();
-        gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(points));
-    });
+		}
+	});
+	
 
     // button listeners
     document.getElementById("reset").onclick = function () {
@@ -89,6 +98,14 @@ window.onload = function init()
     document.getElementById("roll-dice").onclick = function () {
         dice[0].roll();
         dice[1].roll();
+		if(dice[0].number == dice[1].number){
+			legalMoves.push(dice[0].number, dice[1].number);
+			legalMoves.push(dice[0].number, dice[1].number);
+		}
+		else{
+			legalMoves.push(dice[0].number, dice[1].number);
+		}
+		alert(legalMoves);
         redraw();
     };
 
@@ -130,6 +147,165 @@ function render() {
 
     requestAnimFrame (render);
 }
+
+function moveIfValid(fromHolderIndex, toHolderIndex){
+    var valid = true;
+    // chose same holder
+	if(fromHolderIndex == toHolderIndex){
+		valid = false;
+	}
+	var fromCheckers = holders[fromHolderIndex].checkers;
+	var toCheckers = holders[toHolderIndex].checkers;
+    // chose a holder with no checkers
+	if(fromCheckers.length == 0){
+        valid = false;
+	}
+    // moving backwards
+    if(fromHolderIndex - toHolderIndex > 0 && fromCheckers[0] == piece1){
+        valid = false;
+    }
+    // moving backwards
+    if(fromHolderIndex - toHolderIndex < 0 && fromCheckers[0] == piece2){
+        valid = false;
+    }
+    // moving to a holder with opposite color and more than 1
+	if(toCheckers.length > 1 && toCheckers[0] != fromCheckers[0]){
+        valid = false;
+	}
+    // trying to move opposite color
+    if(whiteTurn && fromCheckers[0] != piece1){
+        valid = false;
+    }
+    // trying to move opposite color
+    if(!whiteTurn && fromCheckers[0] == piece1){
+        valid = false;
+    }
+    // capture
+    if(toCheckers.length > 0 && toCheckers[0] != fromCheckers[0]){
+        var piece = holders[toHolderIndex].checkers.pop();
+        if(piece == piece2){
+            jails[0].checkers.push(piece);
+        } else {
+            jails[1].checkers.push(piece);
+        }
+    }
+    if(valid){
+        var piece = holders[fromHolderIndex].checkers.pop();
+        holders[toHolderIndex].checkers.push(piece);
+        firstHolderSelected = null;
+        redraw();
+        changeTurn();
+    } else {
+        firstHolderSelected = null;
+    }
+}
+
+function moveFromJailIfValid(toHolderIndex){
+    var color;
+    if(whiteTurn){
+        color = jails[1].checkers[0];
+    } else {
+        color = jails[0].checkers[0];
+    }
+    var valid = true;
+    var toCheckers = holders[toHolderIndex].checkers;
+    // moving to a holder with opposite color and more than 1
+    if(toCheckers.length > 1 && toCheckers[0] != color){
+        valid = false;
+    }
+    // capture
+    if(toCheckers.length > 0 && toCheckers[0] != color){
+        var piece = holders[toHolderIndex].checkers.pop();
+        if(piece == piece2){
+            jails[0].checkers.push(piece);
+        } else {
+            jails[1].checkers.push(piece);
+        }
+    }
+    if(valid){
+        var piece;
+        if(whiteTurn){
+            piece = jails[1].checkers.pop();
+        } else {
+            piece = jails[0].checkers.pop();
+        }
+        holders[toHolderIndex].checkers.push(piece);
+        firstHolderSelected = null;
+        redraw();
+        changeTurn();
+    } else {
+        firstHolderSelected = null;
+    }
+}
+
+function changeTurn(){
+    var turn = document.getElementById("turn");
+    if(whiteTurn){
+        whiteTurn = false;
+        turn.value = "Black's Turn";
+    } else {
+        whiteTurn = true;
+        turn.value = "White's Turn";
+    }
+    if(!possibleToMove()){
+        changeTurn();
+    }
+}
+
+function possibleToMove(){
+    if(closedBoard()){
+        return false;
+    } else {
+        return true
+    }
+}
+
+function closedBoard(){
+    var closed = true;
+    if(whiteTurn && jails[1].checkers.length > 0){
+        for(var i = 0; i < 6; i++){
+            if(holders[i].checkers.length == 0 || holders[i].checkers[0] != piece2){
+                closed = false;
+            }
+        }
+        return closed;
+    }
+    if(!whiteTurn && jails[0].checkers.length > 0){
+        for(var i = 18; i < 24; i++){
+            if(holders[i].checkers.length == 0 || holders[i].checkers[0] != piece1){
+                closed = false;
+            }
+        }
+        return closed;
+    }
+    return false;
+}
+
+function checkersInJail(){
+    if(whiteTurn && jails[1].checkers.length > 0){
+        return true;
+    } else if (jails[0].checkers.length > 0){
+        return true;
+    } else {
+        return false;
+    }
+}
+
+function findNearestHolder(centerX, centerY){
+	closest = 0;
+    closestDist = 2;
+    for(var i=0; i<holders.length; i++){
+        var x = holders[i].middle[0];
+		var y = holders[i].middle[1];
+		var dist = Math.sqrt(Math.pow(x-centerX,2) + Math.pow(y-centerY,2));
+		if(dist < closestDist){
+			closestDist = dist;
+			closest = i;
+		}
+	}
+	return closest;
+}
+    
 
 function redraw(){
     circles = [[], []];
@@ -199,15 +375,6 @@ function drawNumberOnDie(dieCenterx, dieCentery, value){
     }
 }
 
-function createHolders(){
-    for(var i = 0; i<13; i++){
-        if(i!=6){
-            holders.push(createHolder(-1+2/13*i, false));
-            holders.push(createHolder(-1+2/13*i, true));
-        }
-    }
-}
-
 function drawBoard(){
     drawHolders();
     
@@ -224,7 +391,73 @@ function drawBoard(){
     bottomRight = vec2(triangleWidth/2, -1);
     bottomLeft = vec2(-triangleWidth/2, -1);
     drawSquare(topLeft, topRight, bottomRight, bottomLeft, black);
-    
+	
+	drawJails();    
+}
+
+function createJails(){
+	var topLeft = vec2(-triangleWidth/2 + .01, -.01);
+    var topRight = vec2(triangleWidth/2 - .01, -.01);
+    var bottomRight = vec2(triangleWidth/2 -.01, -1);
+    var bottomLeft = vec2(-triangleWidth/2 + .01, -1);
+	jails.push(new Jail(topLeft, topRight, bottomRight, bottomLeft, true));
+	
+	topLeft = vec2(-triangleWidth/2 + .01, 1);
+    topRight = vec2(triangleWidth/2 -.01, 1);
+    bottomRight = vec2(triangleWidth/2 -.01, .01);
+    bottomLeft = vec2(-triangleWidth/2 + .01, .01);
+	jails.push(new Jail(topLeft, topRight, bottomRight, bottomLeft, false));
+}
+
+function drawJails(){
+	drawSquare(jails[0].topLeft, jails[0].topRight, jails[0].bottomRight, jails[0].bottomLeft, brown);
+    drawSquare(jails[1].topLeft, jails[1].topRight, jails[1].bottomRight, jails[1].bottomLeft, brown);
+	drawCheckersJails(jails[0]);
+	drawCheckersJails(jails[1]);
+}
+
+function createHolders(){
+    for(var i = 0; i<13; i++){
+        var color = gold;
+        if(i%2 == 0){
+            color = red;
+        }
+        if(i!=6){
+            holders.push(createHolder(-1+2/13*(12-i), false, color));
+        }
+    }
+    for(var i = 0; i<13; i++){
+        var color = red;
+        if(i%2 == 0){
+            color = gold;
+        }
+        if(i!=6){
+            holders.push(createHolder(-1+2/13*i, true, color));
+        }
+    }
+    holders[0].checkers.push(piece1, piece1);
+    holders[5].checkers.push(piece2, piece2, piece2, piece2, piece2);
+    holders[7].checkers.push(piece2, piece2, piece2);
+    holders[11].checkers.push(piece1, piece1, piece1, piece1, piece1);
+    holders[12].checkers.push(piece2, piece2, piece2, piece2, piece2);
+    holders[16].checkers.push(piece1, piece1, piece1);
+    holders[18].checkers.push(piece1, piece1, piece1, piece1, piece1);
+    holders[23].checkers.push(piece2, piece2);
+}
+
+function createHolder(upLeft, flip, color){
+    if(flip==false){
+        var left = vec2(upLeft, 1);
+        var right = vec2(upLeft+triangleWidth, 1);
+        var middle = vec2(upLeft+triangleWidth/2, 1-triangleHeight);
+        return new Holder(middle, left, right, flip, color);
+    }
+    else{
+        var left = vec2(upLeft, -1);
+        var right = vec2(upLeft+triangleWidth, -1);
+        var middle = vec2(upLeft+triangleWidth/2, -1+triangleHeight);
+        return new Holder(middle, left, right, flip, color);
+    }
 }
 
 function drawHolders(){
@@ -232,7 +465,7 @@ function drawHolders(){
     for(i=0; i<holders.length; i++){
         holder = holders[i];
         triangles[0].push(holder.left, holder.right, holder.middle);
-        triangles[1].push(red, red, red);
+        triangles[1].push(holder.color, holder.color, holder.color);
         drawCheckers(holder);
     }
 }
@@ -246,28 +479,25 @@ function drawCheckers(holder){
         } else {
             y = holder.left[1] - checkerRadius- 2*checkerRadius*j;
         }
-        drawCircle(x, y, checkerRadius, white);
+        drawCircle(x, y, checkerRadius, holder.checkers[j]);
+    }
+}
+
+function drawCheckersJails(jail){
+    for(var j=0; j<jail.checkers.length; j++){
+        var y;
+        if(jail.flipped){
+            y = jail.bottomLeft[1] + checkerRadius+ 2*checkerRadius*j;
+        } else {
+            y = jail.topLeft[1] - checkerRadius- 2*checkerRadius*j;
+        }
+        drawCircle(0, y, checkerRadius, jail.checkers[j]);
     }
 }
 
 function drawSquare(topLeft, topRight, bottomRight, bottomLeft, color){
     squares[0].push(topLeft, topRight, bottomRight, bottomLeft);
     squares[1].push(color, color, color, color);
-}
-
-function createHolder(upLeft, flip){
-    if(flip==false){
-        var left = vec2(upLeft, 1);
-        var right = vec2(upLeft+triangleWidth, 1);
-        var middle = vec2(upLeft+triangleWidth/2, 1-triangleHeight);
-        return new Holder(middle, left, right, flip);
-    }
-    else{
-        var left = vec2(upLeft, -1);
-        var right = vec2(upLeft+triangleWidth, -1);
-        var middle = vec2(upLeft+triangleWidth/2, -1+triangleHeight);
-        return new Holder(middle, left, right, flip);
-    }
 }
 
 function Die(topLeft, topRight, bottomRight, bottomLeft, centerX, centerY, number){
@@ -285,11 +515,21 @@ function roll(){
     this.number = randomBetween(1,6);
 }
 
-function Holder(middle, left, right, flipped){
+function Holder(middle, left, right, flipped, color){
     this.middle = middle
     this.left = left;
     this.right = right;
     this.flipped = flipped;
-    this.checkers = [1,1];
+    this.color = color;
+    this.checkers = [];
+}
+
+function Jail(topLeft, topRight, bottomRight, bottomLeft, flipped){
+	this.topLeft = topLeft;
+	this.topRight = topRight;
+	this.bottomRight = bottomRight;
+	this.bottomLeft = bottomLeft;
+	this.flipped = flipped;
+	this.checkers = [];
 }
 
