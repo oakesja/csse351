@@ -181,7 +181,7 @@ function moveIfValid(fromHolderIndex, toHolderIndex){
         valid = false;
     }
     // capture
-    if(toCheckers.length > 0 && toCheckers[0] != fromCheckers[0]){
+    if(valid && toCheckers.length == 1 && toCheckers[0] != fromCheckers[0]){
         var piece = holders[toHolderIndex].checkers.pop();
         if(piece == piece2){
             jails[0].checkers.push(piece);
@@ -214,7 +214,7 @@ function moveFromJailIfValid(toHolderIndex){
         valid = false;
     }
     // capture
-    if(toCheckers.length > 0 && toCheckers[0] != color){
+    if(valid && toCheckers.length > 0 && toCheckers[0] != color){
         var piece = holders[toHolderIndex].checkers.pop();
         if(piece == piece2){
             jails[0].checkers.push(piece);
@@ -237,6 +237,7 @@ function moveFromJailIfValid(toHolderIndex){
         firstHolderSelected = null;
     }
 }
+
 
 function changeTurn(){
     var turn = document.getElementById("turn");
